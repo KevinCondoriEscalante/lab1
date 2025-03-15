@@ -1,7 +1,8 @@
 class Pokemon {
-    constructor(name, url) {
+    constructor(name, url, imageUrl) {
       this.name = name;
       this.url = url;
+      this.imageUrl = imageUrl;
     }
     getDisplayName() {
       return this.name.charAt(0).toUpperCase() + this.name.slice(1);
@@ -24,17 +25,49 @@ class Pokemon {
       const image = document.createElement('img');
       image.src = pokemon.imageUrl;
       image.alt = pokemon.name;
-      image .width = 50;
+      image.width = 200;
+      image.height = 200;
 
-      const name = document.createElement('spain');
-      name.textContent = pokemon.getDisplayName();
+
+      const nameSpan = document.createElement('span');
+      nameSpan.textContent = pokemon.getDisplayName();
 
       listItem.appendChild(image);
-      listItem.appendChild(name);
-      listItem.textContent = pokemon.getDisplayName();
+      listItem.appendChild(nameSpan);
+      //listItem.textContent = pokemon.getDisplayName();
       pokemonListElement.appendChild(listItem);
     });
   };
+  async function fetchPokemonData() {
+    try {
+      const response = await fetch(API_URL);
+      const data = await response.json();
+      const { results: allPokemon } = data;
+      totalElement.textContent = 'Total de Pokémon: ${data?.count ?? 0}';
+  
+      const promises = allPokemon.map(async ({ name, url }) => {
+        const detailResponse = await fetch(url);
+        const detailData = await detailResponse.json();
+        return new Pokemon(name, url, detailData.sprites.front_default);
+      });
+  
+      pokemonList = await Promise.all(promises);
+  
+      renderList(pokemonList);
+    } catch (error) {
+      console.error("Error al obtener los datos de Pokémon:", error);
+    }
+  }
+  
+  fetchPokemonData();
+  
+  searchInput.addEventListener('input', (event) => {
+    let searchTerm = event.target.value.toLowerCase();
+    const filteredList = pokemonList.filter((pokemon) =>
+      pokemon.name.includes(searchTerm)
+    );
+    renderList(filteredList);
+  });
   
   async function getFirstPokemonDetails() {
     if (pokemonList.length > 0) {
